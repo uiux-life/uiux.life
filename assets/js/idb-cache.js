@@ -4,7 +4,7 @@
 // Assumes same directory structure and no external libraries
 
 const IDBCache = (() => {
-  const DB_NAME = 'UIUXOffline'
+  const DB_NAME = 'offline-cache'
   const STORE_NAME = 'resources'
   const EXPIRY_MS = 1000 * 60 * 60 * 24 * 7 // 7 days
 
@@ -70,10 +70,35 @@ const IDBCache = (() => {
     })
   }
 
-  return { get, set, remove }
+  async function queueMutation(key, payload) {
+    return set(`pending:${key}`, payload)
+  }
+
+  async function flushMutations(sendFn) {
+    const db = await openDB()
+    const tx = db.transaction(STORE_NAME, 'readonly')
+    const store = tx.objectStore(STORE_NAME)
+    const req = store.getAllKeys()
+    req.onsuccess = async () => {
+      for (const key of req.result) {
+        if (!key.startsWith('pending:')) continue
+        const data = await get(key)
+        try {
+          await sendFn(data)
+          await remove(key)
+        } catch (err) {
+          // Leave in queue for next flush attempt
+        }
+      }
+    }
+  }
+
+  return { get, set, remove, queueMutation, flushMutations }
 })()
 
 // Example usage:
 // IDBCache.set('draft', formData)
 // IDBCache.get('draft').then(data => { ... })
 // IDBCache.remove('draft')
+// IDBCache.queueMutation('user:123', updateData)
+// IDBCache.flushMutations(sendToServer)
