@@ -23,6 +23,14 @@
       "src": "/assets/images/icon-512.png",
       "sizes": "512x512",
       "type": "image/png"
+    },
+    {
+      "src": "/assets/images/apple-icon-180.png",
+      "sizes": "180x180",
+      "type": "image/png",
+      "purpose": "any"
     }
-  ]
+  ],
+  "related_applications": [],
+  "prefer_related_applications": false
 }
