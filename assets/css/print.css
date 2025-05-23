@@ -1,0 +1,64 @@
+/* print.css — All-inclusive print stylesheet */
+
+@media print {
+  /* Reset base styles */
+  *,
+  *::before,
+  *::after {
+    background: none !important;
+    color: #000 !important;
+    box-shadow: none !important;
+    text-shadow: none !important;
+  }
+
+  body {
+    margin: 0;
+    padding: 1in;
+    font: 12pt/1.5 serif;
+    color: #000;
+    background: #fff;
+  }
+
+  /* Hide elements that don’t need printing */
+  nav,
+  aside,
+  footer,
+  app-banner,
+  app-logo,
+  modal-confirm,
+  [aria-hidden="true"],
+  [hidden] {
+    display: none !important;
+  }
+
+  /* Preserve headings and structure */
+  h1, h2, h3, h4 {
+    page-break-after: avoid;
+    color: #000;
+  }
+
+  a[href]:after {
+    content: " (" attr(href) ")";
+  }
+
+  /* Ensure tables print correctly */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  th, td {
+    border: 1px solid #000;
+    padding: 0.25em;
+  }
+
+  /* Avoid breaking inside list items */
+  ul, ol {
+    page-break-before: avoid;
+  }
+
+  /* Page breaks for articles */
+  article {
+    page-break-before: always;
+  }
+}
