@@ -7,6 +7,7 @@ const IDBCache = (() => {
   const DB_NAME = 'offline-cache'
   const STORE_NAME = 'resources'
   const EXPIRY_MS = 1000 * 60 * 60 * 24 * 7 // 7 days
+  const RETRY_DELAY = 5000 // 5 seconds
 
   function openDB() {
     return new Promise((resolve, reject) => {
@@ -91,6 +92,14 @@ const IDBCache = (() => {
         }
       }
     }
+  }
+
+  if ('onLine' in navigator) {
+    window.addEventListener('online', () => {
+      if (typeof IDBCache !== 'undefined' && typeof IDBCache.flushMutations === 'function') {
+        IDBCache.flushMutations(() => Promise.resolve())
+      }
+    })
   }
 
   return { get, set, remove, queueMutation, flushMutations }
