@@ -31,6 +31,19 @@
     display: none !important;
   }
 
+  /* Auto-detect print-only blocks */
+  [data-print-only] {
+    display: block !important;
+  }
+
+  [data-print-only] * {
+    visibility: visible !important;
+  }
+
+  body *:not([data-print-only]):not([data-print-only] *) {
+    display: none !important;
+  }
+
   /* Preserve headings and structure */
   h1, h2, h3, h4 {
     page-break-after: avoid;
