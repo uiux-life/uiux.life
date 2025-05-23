@@ -1,14 +1,15 @@
 // assets/js/idb-cache.js
 
-// Plug-and-play IndexedDB cache utility for offline-safe data
-// Assumes same directory structure and no external libraries
+// Plug-and-play IndexedDB cache utility for offline-safe data.
+// Handles offline storage, expiration, queued mutation persistence, and reconnection sync.
 
 const IDBCache = (() => {
-  const DB_NAME = 'offline-cache'
-  const STORE_NAME = 'resources'
-  const EXPIRY_MS = 1000 * 60 * 60 * 24 * 7 // 7 days
-  const RETRY_DELAY = 5000 // 5 seconds
+  const DB_NAME = 'offline-cache' // Name of the IndexedDB database
+  const STORE_NAME = 'resources' // Name of the object store for cached entries
+  const EXPIRY_MS = 1000 * 60 * 60 * 24 * 7 // Expiry threshold: 7 days
+  const RETRY_DELAY = 5000 // Retry delay after failure: 5 seconds
 
+  // Open or create the IndexedDB database and object store
   function openDB() {
     return new Promise((resolve, reject) => {
       const req = indexedDB.open(DB_NAME, 1)
@@ -21,6 +22,7 @@ const IDBCache = (() => {
     })
   }
 
+  // Retrieve a value by key. Handles expiration and JSON parsing.
   async function get(key) {
     const db = await openDB()
     return new Promise((resolve, reject) => {
@@ -45,6 +47,7 @@ const IDBCache = (() => {
     })
   }
 
+  // Store a value under a key, serialized as JSON with a timestamp
   async function set(key, value) {
     const db = await openDB()
     return new Promise((resolve, reject) => {
@@ -60,6 +63,7 @@ const IDBCache = (() => {
     })
   }
 
+  // Delete a value by key from the object store
   async function remove(key) {
     const db = await openDB()
     return new Promise((resolve, reject) => {
@@ -71,10 +75,12 @@ const IDBCache = (() => {
     })
   }
 
+  // Queue a change to be flushed when online; prepends 'pending:'
   async function queueMutation(key, payload) {
     return set(`pending:${key}`, payload)
   }
 
+  // Attempt to flush all queued mutations using a provided send function
   async function flushMutations(sendFn) {
     const db = await openDB()
     const tx = db.transaction(STORE_NAME, 'readonly')
@@ -82,18 +88,19 @@ const IDBCache = (() => {
     const req = store.getAllKeys()
     req.onsuccess = async () => {
       for (const key of req.result) {
-        if (!key.startsWith('pending:')) continue
+        if (!key.startsWith('pending:')) continue // only process queued items
         const data = await get(key)
         try {
-          await sendFn(data)
-          await remove(key)
+          await sendFn(data) // try sending to server
+          await remove(key) // remove on success
         } catch (err) {
-          // Leave in queue for next flush attempt
+          // Keep in queue; will retry next flush
         }
       }
     }
   }
 
+  // Automatically flush mutations when the browser comes back online
   if ('onLine' in navigator) {
     window.addEventListener('online', () => {
       if (typeof IDBCache !== 'undefined' && typeof IDBCache.flushMutations === 'function') {
@@ -102,6 +109,7 @@ const IDBCache = (() => {
     })
   }
 
+  // Expose public API
   return { get, set, remove, queueMutation, flushMutations }
 })()
 
